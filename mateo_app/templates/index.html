@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>MATEO - Constructor de marcos l\u00f3gicos</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        header { background-color: #6bacff; color: white; padding: 10px; text-align: center; }
+        button { background-color: #ffd408; border: none; padding: 5px 10px; margin: 5px; cursor: pointer; }
+        input { border: 1px solid #8c8c8c; padding: 4px; margin: 3px; }
+        .objective, .result { border: 1px solid #6bacff; margin: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>MATEO</h1>
+    <p>Constructor de marcos l\u00f3gicos</p>
+</header>
+<div id="objectives"></div>
+<button onclick="addObjective()">Agregar Objetivo</button>
+<button onclick="exportPDF()">Exportar a PDF</button>
+<script>
+function addObjective() {
+    const container = document.getElementById('objectives');
+    const div = document.createElement('div');
+    div.className = 'objective';
+    div.innerHTML = `
+        <h3>Objetivo espec\u00edfico</h3>
+        <input type="text" class="obj-desc" placeholder="Descripci\u00f3n">\n
+        <div class="results"></div>
+        <button type="button" onclick="addResult(this)">Agregar Resultado</button>
+    `;
+    container.appendChild(div);
+}
+function addResult(btn) {
+    const container = btn.parentElement.querySelector('.results');
+    const div = document.createElement('div');
+    div.className = 'result';
+    div.innerHTML = `
+        <h4>Resultado</h4>
+        <input type="text" class="res-desc" placeholder="Descripci\u00f3n del resultado">\n
+        <div class="indicators"></div>
+        <button type="button" onclick="addIndicator(this)">Agregar Indicador</button>
+        <div class="activities"></div>
+        <button type="button" onclick="addActivity(this)">Agregar Actividad</button>
+    `;
+    container.appendChild(div);
+}
+function addIndicator(btn) {
+    const container = btn.parentElement.querySelector('.indicators');
+    const div = document.createElement('div');
+    div.className = 'indicator';
+    div.innerHTML = `<input type="text" class="ind-desc" placeholder="Indicador">\n<input type="text" class="ind-means" placeholder="Medios de verificaci\u00f3n">`;
+    container.appendChild(div);
+}
+function addActivity(btn) {
+    const container = btn.parentElement.querySelector('.activities');
+    const div = document.createElement('div');
+    div.className = 'activity';
+    div.innerHTML = `<input type="text" class="act-desc" placeholder="Actividad">\n<input type="text" class="act-means" placeholder="Medios de verificaci\u00f3n">`;
+    container.appendChild(div);
+}
+function exportPDF() {
+    const objectives = [];
+    document.querySelectorAll('.objective').forEach(function(obj){
+        const o = {description: obj.querySelector('.obj-desc').value, results: []};
+        obj.querySelectorAll('.result').forEach(function(res){
+            const r = {description: res.querySelector('.res-desc').value, indicators: [], activities: []};
+            res.querySelectorAll('.indicator').forEach(function(ind){
+                r.indicators.push({
+                    description: ind.querySelector('.ind-desc').value,
+                    means: ind.querySelector('.ind-means').value
+                });
+            });
+            res.querySelectorAll('.activity').forEach(function(act){
+                r.activities.push({
+                    description: act.querySelector('.act-desc').value,
+                    means: act.querySelector('.act-means').value
+                });
+            });
+            o.results.push(r);
+        });
+        objectives.push(o);
+    });
+    fetch('/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({objectives: objectives})
+    }).then(function(res){
+        return res.blob();
+    }).then(function(blob){
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'marco_logico.pdf';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+}
+</script>
+</body>
+</html>
